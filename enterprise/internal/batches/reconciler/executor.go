@@ -171,25 +171,28 @@ func (e *executor) pushChangesetPatch(ctx context.Context) (err error) {
 
 // publishChangeset creates the given changeset on its code host.
 func (e *executor) publishChangeset(ctx context.Context, asDraft bool) (err error) {
-	cs := &sources.Changeset{
-		Title:      e.spec.Spec.Title,
-		Body:       e.spec.Spec.Body,
-		BaseRef:    e.spec.Spec.BaseRef,
-		HeadRef:    e.spec.Spec.HeadRef,
-		RemoteRepo: e.remoteRepo,
-		TargetRepo: e.targetRepo,
-		Changeset:  e.ch,
-	}
-
 	// Depending on the changeset, we may want to add to the body (for example,
 	// to add a backlink to Sourcegraph).
-	if err := decorateChangesetBody(ctx, e.tx, database.NamespacesWith(e.tx), cs); err != nil {
+	body, err := decorateChangesetBody(ctx, e.tx, database.NamespacesWith(e.tx), e.ch, e.spec.Spec.Body)
+	if err != nil {
 		return errors.Wrapf(err, "decorating body for changeset %d", e.ch.ID)
 	}
 
 	css, err := e.changesetSource(ctx)
 	if err != nil {
 		return err
+	}
+
+	// We must construct the sources.Changeset after invoking changesetSource,
+	// since that may change the remoteRepo.
+	cs := &sources.Changeset{
+		Title:      e.spec.Spec.Title,
+		Body:       body,
+		BaseRef:    e.spec.Spec.BaseRef,
+		HeadRef:    e.spec.Spec.HeadRef,
+		RemoteRepo: e.remoteRepo,
+		TargetRepo: e.targetRepo,
+		Changeset:  e.ch,
 	}
 
 	var exists bool
@@ -275,25 +278,28 @@ func (e *executor) loadChangeset(ctx context.Context) error {
 // updateChangeset updates the given changeset's attribute on the code host
 // according to its ChangesetSpec and the delta previously computed.
 func (e *executor) updateChangeset(ctx context.Context) (err error) {
-	cs := sources.Changeset{
-		Title:      e.spec.Spec.Title,
-		Body:       e.spec.Spec.Body,
-		BaseRef:    e.spec.Spec.BaseRef,
-		HeadRef:    e.spec.Spec.HeadRef,
-		RemoteRepo: e.remoteRepo,
-		TargetRepo: e.targetRepo,
-		Changeset:  e.ch,
-	}
-
 	// Depending on the changeset, we may want to add to the body (for example,
 	// to add a backlink to Sourcegraph).
-	if err := decorateChangesetBody(ctx, e.tx, database.NamespacesWith(e.tx), &cs); err != nil {
+	body, err := decorateChangesetBody(ctx, e.tx, database.NamespacesWith(e.tx), e.ch, e.spec.Spec.Body)
+	if err != nil {
 		return errors.Wrapf(err, "decorating body for changeset %d", e.ch.ID)
 	}
 
 	css, err := e.changesetSource(ctx)
 	if err != nil {
 		return err
+	}
+
+	// We must construct the sources.Changeset after invoking changesetSource,
+	// since that may change the remoteRepo.
+	cs := sources.Changeset{
+		Title:      e.spec.Spec.Title,
+		Body:       body,
+		BaseRef:    e.spec.Spec.BaseRef,
+		HeadRef:    e.spec.Spec.HeadRef,
+		RemoteRepo: e.remoteRepo,
+		TargetRepo: e.targetRepo,
+		Changeset:  e.ch,
 	}
 
 	if err := css.UpdateChangeset(ctx, &cs); err != nil {
@@ -576,47 +582,45 @@ type getNamespacer interface {
 	GetByID(ctx context.Context, orgID, userID int32) (*database.Namespace, error)
 }
 
-func decorateChangesetBody(ctx context.Context, tx getBatchChanger, nsStore getNamespacer, cs *sources.Changeset) error {
+func decorateChangesetBody(ctx context.Context, tx getBatchChanger, nsStore getNamespacer, cs *btypes.Changeset, body string) (string, error) {
 	batchChange, err := loadBatchChange(ctx, tx, cs.OwnedByBatchChangeID)
 	if err != nil {
-		return errors.Wrap(err, "failed to load batch change")
+		return "", errors.Wrap(err, "failed to load batch change")
 	}
 
 	// We need to get the namespace, since external batch change URLs are
 	// namespaced.
 	ns, err := nsStore.GetByID(ctx, batchChange.NamespaceOrgID, batchChange.NamespaceUserID)
 	if err != nil {
-		return errors.Wrap(err, "retrieving namespace")
+		return "", errors.Wrap(err, "retrieving namespace")
 	}
 
 	u, err := batchChangeURL(ctx, ns, batchChange)
 	if err != nil {
-		return errors.Wrap(err, "building URL")
+		return "", errors.Wrap(err, "building URL")
 	}
 
 	bcl := fmt.Sprintf("[_Created by Sourcegraph batch change `%s/%s`._](%s)", ns.Name, batchChange.Name, u)
 
 	// Check if the batch change link template variable is present in the changeset
 	// template body.
-	if strings.Contains(cs.Body, "batch_change_link") {
+	if strings.Contains(body, "batch_change_link") {
 		// Since we already ran this template before, `cs.Body` should only contain valid templates for `batch_change_link` at this point.
-		t, err := template.New("changeset_template").Delims("${{", "}}").Funcs(template.FuncMap{"batch_change_link": func() string { return bcl }}).Parse(cs.Body)
+		t, err := template.New("changeset_template").Delims("${{", "}}").Funcs(template.FuncMap{"batch_change_link": func() string { return bcl }}).Parse(body)
 		if err != nil {
-			return errors.Wrap(err, "handling batch_change_link: parsing changeset template")
+			return "", errors.Wrap(err, "handling batch_change_link: parsing changeset template")
 		}
 
 		var out bytes.Buffer
 		if err := t.Execute(&out, nil); err != nil {
-			return errors.Wrap(err, "handling batch_change_link: executing changeset template")
+			return "", errors.Wrap(err, "handling batch_change_link: executing changeset template")
 		}
 
-		cs.Body = out.String()
-	} else {
-		// Otherwise, append to the end of the body.
-		cs.Body = fmt.Sprintf("%s\n\n%s", cs.Body, bcl)
+		return out.String(), nil
 	}
 
-	return nil
+	// Otherwise, append to the end of the body.
+	return fmt.Sprintf("%s\n\n%s", body, bcl), nil
 }
 
 // internalClient is here for mocking reasons.

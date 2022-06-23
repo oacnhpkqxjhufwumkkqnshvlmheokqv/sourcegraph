@@ -472,6 +472,8 @@ func parseGitLabPipelineStatus(status gitlab.PipelineStatus) btypes.ChangesetChe
 func computeSingleChangesetExternalState(c *btypes.Changeset) (s btypes.ChangesetExternalState, err error) {
 	if !c.ExternalDeletedAt.IsZero() {
 		return btypes.ChangesetExternalStateDeleted, nil
+	} else if c.ExternalState == btypes.ChangesetExternalStateReadOnly {
+		return btypes.ChangesetExternalStateReadOnly, nil
 	}
 
 	switch m := c.Metadata.(type) {

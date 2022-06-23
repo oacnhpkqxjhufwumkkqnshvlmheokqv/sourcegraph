@@ -303,7 +303,13 @@ func (e *executor) updateChangeset(ctx context.Context) (err error) {
 	}
 
 	if err := css.UpdateChangeset(ctx, &cs); err != nil {
-		return errors.Wrap(err, "updating changeset")
+		if errcode.IsArchived(err) {
+			// We set the ExternalState here, and then SetDerivedState will do the
+			// rest later.
+			e.ch.ExternalState = btypes.ChangesetExternalStateReadOnly
+		} else {
+			return errors.Wrap(err, "updating changeset")
+		}
 	}
 
 	return nil

@@ -140,11 +140,24 @@ func (c *Client) GetMergeRequest(ctx context.Context, project *Project, iid ID) 
 	resp := &MergeRequest{}
 	if _, _, err := c.do(ctx, req, resp); err != nil {
 		var e HTTPError
-		if errors.As(err, &e) && e.Code() == http.StatusNotFound {
-			if strings.Contains(e.Message(), "Project Not Found") {
-				err = ErrProjectNotFound
-			} else {
-				err = ErrMergeRequestNotFound
+		if errors.As(err, &e) {
+			if e.Code() == http.StatusNotFound {
+				if strings.Contains(e.Message(), "Project Not Found") {
+					err = ErrProjectNotFound
+				} else {
+					err = ErrMergeRequestNotFound
+				}
+			} else if e.Code() == http.StatusForbidden {
+				// 403 _may_ mean that the project is now archived, but we need to
+				// check. We'll bypass the cache because it's likely that the cache is
+				// out of date if we got here.
+				project, perr := c.getProjectFromAPI(ctx, project.ID, project.PathWithNamespace)
+				fmt.Println(project, perr)
+				// We won't bother bubbling up the nested error if one occurred; let's
+				// just check if the project is archived if we got the project back.
+				if perr == nil && project.Archived {
+					err = &ProjectArchivedError{Name: project.PathWithNamespace}
+				}
 			}
 		}
 		return nil, errors.Wrap(err, "sending request to get a merge request")

@@ -11,13 +11,13 @@ import (
 )
 
 func TestDependencyGraph(t *testing.T) {
-	a := &testPackageVersion{name: "a", version: "1.0.0"}
-	b := &testPackageVersion{name: "b", version: "1.0.0"}
-	c := &testPackageVersion{name: "c", version: "1.0.0"}
-	d := &testPackageVersion{name: "d", version: "1.0.0"}
-	e := &testPackageVersion{name: "e", version: "1.0.0"}
-	f := &testPackageVersion{name: "f", version: "1.0.0"}
-	g := &testPackageVersion{name: "g", version: "1.0.0"}
+	a := &testVersionedPackage{name: "a", version: "1.0.0"}
+	b := &testVersionedPackage{name: "b", version: "1.0.0"}
+	c := &testVersionedPackage{name: "c", version: "1.0.0"}
+	d := &testVersionedPackage{name: "d", version: "1.0.0"}
+	e := &testVersionedPackage{name: "e", version: "1.0.0"}
+	f := &testVersionedPackage{name: "f", version: "1.0.0"}
+	g := &testVersionedPackage{name: "g", version: "1.0.0"}
 
 	dg := newDependencyGraph()
 	dg.addPackage(a)
@@ -59,20 +59,20 @@ func TestDependencyGraph(t *testing.T) {
 
 }
 
-var _ reposource.PackageVersion = &testPackageVersion{}
+var _ reposource.VersionedPackage = &testVersionedPackage{}
 
-type testPackageVersion struct {
+type testVersionedPackage struct {
 	name    string
 	version string
 }
 
-func (t *testPackageVersion) PackageVersionSyntax() string { return t.name }
-func (t *testPackageVersion) PackageSyntax() string        { return t.name }
-func (t *testPackageVersion) RepoName() api.RepoName       { return api.RepoName("test/" + t.name) }
-func (t *testPackageVersion) PackageVersion() string       { return t.version }
-func (t *testPackageVersion) Scheme() string               { return "test" }
-func (t *testPackageVersion) Description() string          { return "" }
-func (t *testPackageVersion) GitTagFromVersion() string    { return t.version }
-func (t *testPackageVersion) Less(other reposource.PackageVersion) bool {
+func (t *testVersionedPackage) VersionedPackageSyntax() string { return t.name }
+func (t *testVersionedPackage) PackageSyntax() string          { return t.name }
+func (t *testVersionedPackage) RepoName() api.RepoName         { return api.RepoName("test/" + t.name) }
+func (t *testVersionedPackage) PackageVersion() string         { return t.version }
+func (t *testVersionedPackage) Scheme() string                 { return "test" }
+func (t *testVersionedPackage) Description() string            { return "" }
+func (t *testVersionedPackage) GitTagFromVersion() string      { return t.version }
+func (t *testVersionedPackage) Less(other reposource.VersionedPackage) bool {
 	return t.PackageSyntax() < other.PackageSyntax()
 }

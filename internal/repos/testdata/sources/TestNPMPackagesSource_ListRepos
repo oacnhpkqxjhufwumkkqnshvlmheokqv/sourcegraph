@@ -30,6 +30,35 @@
   },
   {
    "ID": 0,
+   "Name": "npm/fastq",
+   "URI": "npm/fastq",
+   "Description": "Fast, in memory work queue",
+   "Fork": false,
+   "Archived": false,
+   "Private": false,
+   "CreatedAt": "0001-01-01T00:00:00Z",
+   "UpdatedAt": "0001-01-01T00:00:00Z",
+   "DeletedAt": "0001-01-01T00:00:00Z",
+   "ExternalRepo": {
+    "ID": "npm/fastq",
+    "ServiceType": "npmPackages",
+    "ServiceID": "npmPackages"
+   },
+   "Sources": {
+    "extsvc:npmpackages:0": {
+     "ID": "extsvc:npmpackages:0",
+     "CloneURL": "npm/fastq"
+    }
+   },
+   "Metadata": {
+    "Package": {
+     "Scope": "",
+     "Name": "fastq"
+    }
+   }
+  },
+  {
+   "ID": 0,
    "Name": "npm/lodash",
    "URI": "npm/lodash",
    "Description": "",

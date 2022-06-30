@@ -47,7 +47,7 @@ func TestGetNpmDependencyRepos(t *testing.T) {
 			pkg, err := reposource.ParseNpmPackageFromPackageSyntax(dep.Name)
 			require.Nil(t, err)
 			depStrs = append(depStrs,
-				(&reposource.NpmPackageVersion{NpmPackageName: pkg, Version: dep.Version}).PackageVersionSyntax(),
+				(&reposource.NpmVersionedPackage{NpmPackageName: pkg, Version: dep.Version}).VersionedPackageSyntax(),
 			)
 		}
 		sort.Strings(depStrs)
@@ -69,7 +69,7 @@ func TestGetNpmDependencyRepos(t *testing.T) {
 			require.Equal(t, len(deps), 1)
 			pkg, err := reposource.ParseNpmPackageFromPackageSyntax(deps[0].Name)
 			require.Nil(t, err)
-			depStrs = append(depStrs, (&reposource.NpmPackageVersion{NpmPackageName: pkg, Version: deps[0].Version}).PackageVersionSyntax())
+			depStrs = append(depStrs, (&reposource.NpmVersionedPackage{NpmPackageName: pkg, Version: deps[0].Version}).VersionedPackageSyntax())
 			lastID = deps[0].ID
 		}
 		sort.Strings(depStrs)
@@ -103,7 +103,7 @@ var testDependencies = []string{
 var testDependencyRepos = func() []dependencies.Repo {
 	dependencyRepos := []dependencies.Repo{}
 	for i, depStr := range testDependencies {
-		dep, err := reposource.ParseNpmPackageVersion(depStr)
+		dep, err := reposource.ParseNpmVersionedPackage(depStr)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -144,7 +144,7 @@ func TestNPMPackagesSource_ListRepos(t *testing.T) {
 			ID:      4,
 			Scheme:  dependencies.NpmPackagesScheme,
 			Name:    "fastq",
-			Version: "0.9.9", // Test missing modules are skipped.
+			Version: "0.9.9", // test missing modules still create a repo.
 		},
 	})
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { mdiClose } from '@mdi/js'
+import { mdiBookOutline, mdiClose } from '@mdi/js'
 import classNames from 'classnames'
 import BookOutlineIcon from 'mdi-react/BookOutlineIcon'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
@@ -246,7 +246,7 @@ export const NotebookPage: React.FunctionComponent<React.PropsWithChildren<Noteb
                             >
                                 <PageHeader.Heading as="h2" styleAs="h1">
                                     <PageHeader.Breadcrumb
-                                        icon={BookOutlineIcon}
+                                        icon={mdiBookOutline}
                                         to="/notebooks"
                                         aria-label="Notebooks"
                                     />

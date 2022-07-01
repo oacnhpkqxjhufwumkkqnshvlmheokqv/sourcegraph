@@ -26,10 +26,13 @@ type PackagesSource struct {
 type packagesSource interface {
 	// ParseVersionedPackageFromConfiguration parses a package and version from the "dependencies"
 	// field from the site-admin interface.
+	// For example: "react@1.2.0" or "com.google.guava:guava:30.0-jre".
 	ParseVersionedPackageFromConfiguration(dep string) (reposource.VersionedPackage, error)
 	// ParsePackageFromRepoName parses a Sourcegraph repository name of the package.
+	// For example: "npm/react" or "maven/com.google.guava/guava".
 	ParsePackageFromRepoName(repoName string) (reposource.Package, error)
-	// ParsePackageFromName parses a reposource.Package from the name of the package.
+	// ParsePackageFromName parses a package from the name of the package, as accepted by the ecosystem's package manager.
+	// For example: "react" or "com.google.guava:guava".
 	ParsePackageFromName(name string) (reposource.Package, error)
 	// functions in this file that switch against concrete implementations of this interface:
 	// getPackage(): to fetch the description of this package, only supported by a few implementations.

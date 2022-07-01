@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { mdiBookOutline, mdiClose } from '@mdi/js'
 import classNames from 'classnames'
-import BookOutlineIcon from 'mdi-react/BookOutlineIcon'
 import CheckCircleIcon from 'mdi-react/CheckCircleIcon'
 import { RouteComponentProps } from 'react-router'
 import { Observable } from 'rxjs'
